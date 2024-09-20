@@ -1,0 +1,38 @@
+{
+  "name": "@nartallax/forest",
+  "version": "1.0.0",
+  "description": "Library about trees, groups of trees and various operations over them.",
+  "author": "Nartallax",
+  "license": "0BSD",
+  "type": "module",
+  "main": "forest.js",
+  "types": "forest.d.ts",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/nartallax/forest.git"
+  },
+  "bugs": {
+    "url": "https://github.com/nartallax/forest/issues"
+  },
+  "homepage": "https://github.com/nartallax/forest#readme",
+  "scripts": {
+    "typecheck": "node esbuild.mjs typecheck",
+    "test": "node esbuild.mjs test",
+    "release": "node esbuild.mjs release",
+    "pub": "node esbuild.mjs publish"
+  },
+  "devDependencies": {
+    "@eslint/js": "^9.2.0",
+    "@nartallax/clamsensor": "^2.0.10",
+    "@nartallax/package-cutter": "^1.0.2",
+    "@types/chai": "^4.3.19",
+    "@typescript-eslint/eslint-plugin": "^6.7.0",
+    "@typescript-eslint/parser": "^6.7.0",
+    "chai": "^5.1.1",
+    "dts-bundle-generator": "^9.5.1",
+    "esbuild": "0.23.1",
+    "eslint": "^8.57.0",
+    "typescript": "^5.4.5",
+    "typescript-eslint": "^7.8.0"
+  }
+}
