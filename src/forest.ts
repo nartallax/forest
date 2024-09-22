@@ -24,6 +24,20 @@ export class Forest<T, B> {
 		}
 	}
 
+	/** Get all branch values from this forest, with their respective paths */
+	* getBranchesWithPath(): IterableIterator<[B, ForestPath]> {
+		for(const [branch, path] of this.getTreeNodesInternal(this.trees, isTreeBranch)){
+			yield[branch.value, path]
+		}
+	}
+
+	/** Get all branch values from this forest */
+	* getBranches(): IterableIterator<B> {
+		for(const [value] of this.getBranchesWithPath()){
+			yield value
+		}
+	}
+
 	/** Given a predicate, find a tree node that matches it and return its path
 	Will check all the nodes in the forest */
 	findPathByTree(isThisIt: (tree: Tree<T, B>) => boolean): ForestPath | null {
