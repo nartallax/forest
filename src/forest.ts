@@ -121,6 +121,17 @@ export class Forest<T, B> {
 		return tree.value
 	}
 
+	/** Resolve a path to branch value. */
+	getBranchAt(path: ForestPath): B {
+		const tree = this.getTreeAt(path)
+
+		if(!isTreeBranch(tree)){
+			throw errorNotBranch()
+		}
+
+		return tree.value
+	}
+
 	/** Update tree node at given path. Will create a new forest. */
 	updateTreeAt(path: ForestPath, updater: (tree: Tree<T, B>) => Tree<T, B>): Forest<T, B> {
 		return new Forest(this.updateInternal(this.trees, path, updater))
