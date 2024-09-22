@@ -4,8 +4,9 @@ import * as Process from "process"
 import * as ChildProcess from "child_process"
 import * as Path from "path"
 
-const sourcesRoot = "./src"
-const releaseEntrypoint = Path.resolve(sourcesRoot, "forest.ts")
+const tsconfig = JSON.parse(await Fs.readFile("./tsconfig.json"))
+const sourcesRoot = tsconfig.compilerOptions.rootDir
+const releaseEntrypoint = Path.resolve(sourcesRoot, "main.ts")
 
 const generatedSourcesRoot = Path.resolve(sourcesRoot, "generated")
 const testEntrypoint = Path.resolve(generatedSourcesRoot, "test.ts")
@@ -112,8 +113,9 @@ async function generateDts(args){
 		executable:"npx", 
 		args: [
 			"dts-bundle-generator", 
-			"-o", args.outputFile, 
+			"--out-file", args.outputFile, 
 			"--project", "tsconfig.json", 
+			"--export-referenced-types=false",
 			"--no-banner", 
 			args.inputFile
 		]
@@ -154,7 +156,7 @@ async function typecheck(directory){
 async function publishToNpm(args){
 	await runShell({
 		executable: "npm", 
-		args: ["publish", "--access", "public", "--dry-run"],
+		args: ["publish", "--access", "public"],
 		cwd: args.targetDir
 	})
 }
