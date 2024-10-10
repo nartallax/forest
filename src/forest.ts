@@ -1,4 +1,4 @@
-import {ForestPath, isTreeBranch, Tree, TreeLeaf} from "tree"
+import {ForestPath, isTreeBranch, Tree, TreeBranch, TreeLeaf} from "tree"
 import {nonNull} from "utils"
 
 /** Forest is an immutable structure representing a set of trees */
@@ -124,26 +124,36 @@ export class Forest<T, B> {
 		return this.pathToTrees(path)[path.length - 1]!
 	}
 
-	/** Resolve a path to leaf value. */
-	getLeafAt(path: ForestPath): T {
+	/** Resolve a path to leaf node. Throws if not leaf. */
+	getLeafTreeAt(path: ForestPath): TreeLeaf<T> {
 		const tree = this.getTreeAt(path)
 
 		if(isTreeBranch(tree)){
 			throw errorNotLeaf()
 		}
 
-		return tree.value
+		return tree
 	}
 
-	/** Resolve a path to branch value. */
-	getBranchAt(path: ForestPath): B {
+	/** Resolve a path to leaf value. */
+	getLeafAt(path: ForestPath): T {
+		return this.getLeafTreeAt(path).value
+	}
+
+	/** Resolve a path to branch node. Throws if not branch. */
+	getBranchTreeAt(path: ForestPath): TreeBranch<T, B> {
 		const tree = this.getTreeAt(path)
 
 		if(!isTreeBranch(tree)){
 			throw errorNotBranch()
 		}
 
-		return tree.value
+		return tree
+	}
+
+	/** Resolve a path to branch value. */
+	getBranchAt(path: ForestPath): B {
+		return this.getBranchTreeAt(path).value
 	}
 
 	/** Update tree node at given path. Will create a new forest. */
