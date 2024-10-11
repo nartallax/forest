@@ -1,6 +1,6 @@
 {
   "name": "@nartallax/forest",
-  "version": "1.0.4",
+  "version": "1.0.5",
   "description": "Library about trees, groups of trees and various operations over them.",
   "author": "Nartallax",
   "license": "0BSD",

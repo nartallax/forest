@@ -301,4 +301,66 @@ describe("Forest", () => {
 		expect(new Forest(trees).insertBranchAt([2, 1], "new branch").getSiblingsAt([2, 1])).to.eql([6, "subdir"])
 	})
 
+	test("sorting", () => {
+		expect("\n" + new Forest(trees).sort((a, b) => (a.value + "") < (b.value + "") ? 1 : -1)).to.eql(`
+├nonEmptyDir
+│├subdir
+││├emptySubdir
+││└7
+│└6
+├emptyDir
+└5`)
+
+		expect("\n" + new Forest(trees).sort((a, b) => (a.value + "") < (b.value + "") ? -1 : 1)).to.eql(`
+├5
+├emptyDir
+└nonEmptyDir
+ ├6
+ └subdir
+  ├7
+  └emptySubdir`)
+	})
+
+	test("sorting on insert", () => {
+		expect("\n" + new Forest(trees).insertLeafAt([2, 0], 8, (a, b) => (a.value + "") < (b.value + "") ? -1 : 1)).to.eql(`
+├emptyDir
+├5
+└nonEmptyDir
+ ├6
+ ├8
+ └subdir
+  ├7
+  └emptySubdir`)
+	})
+
+	test("sorting on update", () => {
+		const f = new Forest(trees)
+			.insertLeafAt([2, 0], 4)
+			.updateLeafAt([2, 0], () => 9, (a, b) => (a.value + "") < (b.value + "") ? -1 : 1)
+		expect("\n" + f).to.eql(`
+├5
+├emptyDir
+└nonEmptyDir
+ ├6
+ ├9
+ └subdir
+  ├7
+  └emptySubdir`)
+	})
+
+	test("sorting on move", () => {
+		const f = new Forest(trees)
+			.insertLeafAt([2, 0], 8)
+			.move([2, 0], [2, 5], (a, b) => (a.value + "") < (b.value + "") ? -1 : 1)
+		expect("\n" + f).to.eql(`
+├emptyDir
+├5
+└nonEmptyDir
+ ├6
+ ├8
+ └subdir
+  ├7
+  └emptySubdir`)
+	})
+
 })

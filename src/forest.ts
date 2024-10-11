@@ -1,6 +1,8 @@
 import {ForestPath, isTreeBranch, Tree, TreeBranch, TreeLeaf} from "tree"
 import {nonNull} from "utils"
 
+type Comparator<T, B> = (a: Tree<T, B>, b: Tree<T, B>) => number
+
 /** Forest is an immutable structure representing a set of trees */
 export class Forest<T, B> {
 	constructor(readonly trees: readonly Tree<T, B>[]) {}
@@ -157,28 +159,28 @@ export class Forest<T, B> {
 	}
 
 	/** Update tree node at given path. Will create a new forest. */
-	updateTreeAt(path: ForestPath, updater: (tree: Tree<T, B>) => Tree<T, B>): Forest<T, B> {
-		return new Forest(this.updateInternal(this.trees, path, updater))
+	updateTreeAt(path: ForestPath, updater: (tree: Tree<T, B>) => Tree<T, B>, comparator?: Comparator<T, B>): Forest<T, B> {
+		return new Forest(this.updateInternal(this.trees, path, updater, comparator))
 	}
 
 	/** Update leaf value at given path. Will create a new forest. */
-	updateLeafAt(path: ForestPath, updater: (value: T) => T): Forest<T, B> {
+	updateLeafAt(path: ForestPath, updater: (value: T) => T, comparator?: Comparator<T, B>): Forest<T, B> {
 		return this.updateTreeAt(path, tree => {
 			if(isTreeBranch(tree)){
 				throw errorNotLeaf()
 			}
 			return {value: updater(tree.value)}
-		})
+		}, comparator)
 	}
 
 	/** Update branch value at given path. Will create a new forest. */
-	updateBranchAt(path: ForestPath, updater: (value: B) => B): Forest<T, B> {
+	updateBranchAt(path: ForestPath, updater: (value: B) => B, comparator?: Comparator<T, B>): Forest<T, B> {
 		return this.updateTreeAt(path, tree => {
 			if(!isTreeBranch(tree)){
 				throw errorNotBranch()
 			}
 			return {value: updater(tree.value), children: tree.children}
-		})
+		}, comparator)
 	}
 
 	/** Delete tree node at given path. Will create a new forest. */
@@ -208,50 +210,67 @@ export class Forest<T, B> {
 
 	/** Insert given tree node at given path. Will create a new forest.
 	When inserted at the place of existing node, that existing node will be shifted to higher index;
-	this way new node will sit at given path, and existing node will sit at one index down. */
-	insertTreeAt(path: ForestPath, newTree: Tree<T, B>): Forest<T, B> {
-		return new Forest(this.insertAtInternal(this.trees, path, newTree))
+	this way new node will sit at given path, and existing node will sit at one index down.
+
+	If @param comparator is passed, containing branch/root will be sorted. The rest of the tree won't be sorted.
+	Usually sorting does not rely on children/parents, so it's fine to do and will reduce overhead.
+	If your case DOES rely on something like that - you can always call .sort() after */
+	insertTreeAt(path: ForestPath, newTree: Tree<T, B>, comparator?: Comparator<T, B>): Forest<T, B> {
+		return new Forest(this.insertAtInternal(this.trees, path, newTree, comparator))
 	}
 
 	/** Create new leaf node at given path. Will create a new forest. */
-	insertLeafAt(path: ForestPath, leaf: T): Forest<T, B> {
-		return this.insertTreeAt(path, {value: leaf})
+	insertLeafAt(path: ForestPath, leaf: T, comparator?: Comparator<T, B>): Forest<T, B> {
+		return this.insertTreeAt(path, {value: leaf}, comparator)
 	}
 
 	/** Create new branch node at given path. Will create a new forest. */
-	insertBranchAt(path: ForestPath, branch: B, children: readonly Tree<T, B>[] = []): Forest<T, B> {
-		return this.insertTreeAt(path, {value: branch, children})
+	insertBranchAt(path: ForestPath, branch: B, children: readonly Tree<T, B>[] = [], comparator?: Comparator<T, B>): Forest<T, B> {
+		if(comparator){
+			const newChildren = [...children]
+			newChildren.sort(comparator)
+			children = newChildren
+		}
+		return this.insertTreeAt(path, {value: branch, children}, comparator)
 	}
 
-	private insertAtInternal(trees: readonly Tree<T, B>[], path: ForestPath, newTree: Tree<T, B>): readonly Tree<T, B>[] {
+	private insertAtInternal(trees: readonly Tree<T, B>[], path: ForestPath, newTree: Tree<T, B>, comparator?: Comparator<T, B>): Tree<T, B>[] {
 		if(path.length === 0){
 			throw errorZeroLengthPath()
 		}
 
+		let result: Tree<T, B>[]
 		const lastPathPart = path[path.length - 1]!
 		if(path.length === 1){
-			trees = insertElement(trees, newTree, lastPathPart)
+			result = insertElement(trees, newTree, lastPathPart)
+			if(comparator){
+				result.sort(comparator)
+			}
 		} else {
-			trees = this.updateInternal(trees, path.slice(0, path.length - 1), tree => {
+			result = this.updateInternal(trees, path.slice(0, path.length - 1), tree => {
 				if(!isTreeBranch(tree)){
 					throw errorNotBranch()
 				}
-				return {value: tree.value, children: insertElement(tree.children, newTree, lastPathPart)}
+				const children = insertElement(tree.children, newTree, lastPathPart)
+				if(comparator){
+					children.sort(comparator)
+				}
+				return {value: tree.value, children}
 			})
 		}
 
-		return trees
+		return result
 	}
 
 	/** Move a tree node from one place in the forest to another. Will create a new forest.
 	Insert-shifting rules apply, see insertTreeAt() */
-	move(from: ForestPath, to: ForestPath): Forest<T, B> {
+	move(from: ForestPath, to: ForestPath, comparator?: Comparator<T, B>): Forest<T, B> {
 		const tree = this.getTreeAt(from)
 		to = updateMovePath(from, to)
 
 		let trees = this.trees
 		trees = this.deleteAtInternal(trees, from)
-		trees = this.insertAtInternal(trees, to, tree)
+		trees = this.insertAtInternal(trees, to, tree, comparator)
 		return new Forest(trees)
 	}
 
@@ -347,6 +366,7 @@ export class Forest<T, B> {
 		trees: readonly Tree<T, B>[],
 		path: ForestPath,
 		updater: (tree: Tree<T, B>) => Tree<T, B>,
+		comparator?: Comparator<T, B>,
 		index = 0
 	): Tree<T, B>[] {
 		const pathPart = path[index]!
@@ -363,12 +383,15 @@ export class Forest<T, B> {
 			}
 			tree = {
 				...tree,
-				children: this.updateInternal(tree.children, path, updater, index + 1)
+				children: this.updateInternal(tree.children, path, updater, comparator, index + 1)
 			}
 		}
 
 		const result = [...trees]
 		result[pathPart] = tree
+		if(comparator){
+			result.sort(comparator)
+		}
 		return result
 	}
 
@@ -433,6 +456,28 @@ export class Forest<T, B> {
 
 			if(isTreeBranch(tree)){
 				yield* this.getTreeNodesInternal(tree.children, isThisIt, treePath)
+			}
+		}
+	}
+
+	/** Reorder trees in root and each branch according to comparator. */
+	sort(comparator: Comparator<T, B>): Forest<T, B> {
+		const trees = [...this.trees]
+		this.sortTreesRecursively(trees, comparator)
+		return new Forest(trees)
+	}
+
+	private sortTreesRecursively(trees: Tree<T, B>[], comparator: Comparator<T, B>): void {
+		trees.sort(comparator)
+		for(let i = 0; i < trees.length; i++){
+			const tree = trees[i]!
+			if(isTreeBranch(tree)){
+				const children = [...tree.children]
+				this.sortTreesRecursively(children, comparator)
+				trees[i] = {
+					value: tree.value,
+					children
+				}
 			}
 		}
 	}
