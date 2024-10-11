@@ -308,8 +308,9 @@ export class Forest<T, B> {
 		return result
 	}
 
-	/** Given a list of values that represent a path within forest, convert those values to indices. */
-	valuesToPath(values: readonly (T | B)[]): ForestPath {
+	/** Given a list of values that represent a path within forest, convert those values to indices.
+	Returns null if any of the values cannot be found. */
+	valuesToPath(values: readonly (T | B)[]): ForestPath | null {
 		let trees = this.trees
 		const result: number[] = []
 		outer: for(let arrayIndex = 0; arrayIndex < values.length; arrayIndex++){
@@ -332,6 +333,7 @@ export class Forest<T, B> {
 				}
 				i++
 			}
+			return null
 		}
 		throw new Error("Unreachable")
 	}
