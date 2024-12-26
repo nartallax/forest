@@ -61,7 +61,7 @@ async function main(mode) {
 				outfile: testJs,
 			})
 
-			await runJs({jsFile: testJs, exitOnError: true})
+			await runJs({jsFile: testJs, exitOnError: true, args: Process.argv[3]? [Process.argv[3]]: []})
 		} break
 
 
@@ -139,7 +139,7 @@ async function generateTestEntrypoint(args){
 async function runJs(args){
 	await runShell({
 		executable: Process.argv[0], 
-		args: [args.jsFile],
+		args: [args.jsFile, ...(args.args ?? [])],
 		exitOnError: args.exitOnError
 	})
 }

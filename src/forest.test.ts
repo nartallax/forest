@@ -363,4 +363,44 @@ describe("Forest", () => {
   └emptySubdir`)
 	})
 
+	test("multiple node operations", () => {
+		let f = new Forest(trees)
+			.insertLeavesAt([2, 1], [1, 2, 3, 4])
+		expect("\n" + f).to.eql(`
+├emptyDir
+├5
+└nonEmptyDir
+ ├6
+ ├1
+ ├2
+ ├3
+ ├4
+ └subdir
+  ├7
+  └emptySubdir`)
+
+		f = f.moveSeveral([2, 2], [2, 0], 4)
+		expect("\n" + f).to.eql(`
+├emptyDir
+├5
+└nonEmptyDir
+ ├2
+ ├3
+ ├4
+ ├subdir
+ │├7
+ │└emptySubdir
+ ├6
+ └1`)
+
+		f = f.deleteSeveralAt([2, 1], 3)
+		expect("\n" + f).to.eql(`
+├emptyDir
+├5
+└nonEmptyDir
+ ├2
+ ├6
+ └1`)
+	})
+
 })

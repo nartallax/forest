@@ -126,6 +126,24 @@ export class Forest<T, B> {
 		return this.pathToTrees(path)[path.length - 1]!
 	}
 
+	getTreesAt(path: ForestPath, amount: number): readonly Tree<T, B>[] {
+		if(path.length === 0){
+			return []
+		}
+		let trees: readonly Tree<T, B>[]
+		if(path.length === 1){
+			trees = this.trees
+		} else {
+			const parent = this.getTreeAt(path.slice(0, path.length - 1))
+			if(!isTreeBranch(parent)){
+				throw errorNotBranch()
+			}
+			trees = parent.children
+		}
+		const start = path[path.length - 1]!
+		return trees.slice(start, start + amount)
+	}
+
 	/** Resolve a path to leaf node. Throws if not leaf. */
 	getLeafTreeAt(path: ForestPath): TreeLeaf<T> {
 		const tree = this.getTreeAt(path)
@@ -185,27 +203,38 @@ export class Forest<T, B> {
 
 	/** Delete tree node at given path. Will create a new forest. */
 	deleteAt(path: ForestPath): Forest<T, B> {
-		return new Forest(this.deleteAtInternal(this.trees, path))
+		return new Forest(this.deleteAtInternal(this.trees, path, 1))
 	}
 
-	private deleteAtInternal(trees: readonly Tree<T, B>[], path: ForestPath): readonly Tree<T, B>[] {
+	/** Delete several tree nodes starting at given path. Will create a new forest. */
+	deleteSeveralAt(path: ForestPath, amount: number): Forest<T, B> {
+		return new Forest(this.deleteAtInternal(this.trees, path, amount))
+	}
+
+	private deleteAtInternal(trees: readonly Tree<T, B>[], path: ForestPath, amount: number): readonly Tree<T, B>[] {
 		if(path.length === 0){
 			throw errorZeroLengthPath()
 		}
 
 		const lastPathPart = path[path.length - 1]!
 		if(path.length === 1){
-			trees = dropElement(trees, lastPathPart)
+			trees = dropElements(trees, lastPathPart, amount)
 		} else {
 			trees = this.updateInternal(trees, path.slice(0, path.length - 1), tree => {
 				if(!isTreeBranch(tree)){
 					throw errorNotBranch()
 				}
-				return {value: tree.value, children: dropElement(tree.children, lastPathPart)}
+				return {value: tree.value, children: dropElements(tree.children, lastPathPart, amount)}
 			})
 		}
 
 		return trees
+	}
+
+	/** Insert several tree nodes at given path. Will create a new forest.
+	See @method insertTreesAt for further explainations */
+	insertTreesAt(path: ForestPath, newTrees: readonly Tree<T, B>[], comparator?: Comparator<T, B>): Forest<T, B> {
+		return new Forest(this.insertAtInternal(this.trees, path, newTrees, comparator))
 	}
 
 	/** Insert given tree node at given path. Will create a new forest.
@@ -216,12 +245,17 @@ export class Forest<T, B> {
 	Usually sorting does not rely on children/parents, so it's fine to do and will reduce overhead.
 	If your case DOES rely on something like that - you can always call .sort() after */
 	insertTreeAt(path: ForestPath, newTree: Tree<T, B>, comparator?: Comparator<T, B>): Forest<T, B> {
-		return new Forest(this.insertAtInternal(this.trees, path, newTree, comparator))
+		return new Forest(this.insertAtInternal(this.trees, path, [newTree], comparator))
 	}
 
 	/** Create new leaf node at given path. Will create a new forest. */
 	insertLeafAt(path: ForestPath, leaf: T, comparator?: Comparator<T, B>): Forest<T, B> {
 		return this.insertTreeAt(path, {value: leaf}, comparator)
+	}
+
+	/** Create new leaf nodes at given path. Will create a new forest. */
+	insertLeavesAt(path: ForestPath, leaves: T[], comparator?: Comparator<T, B>): Forest<T, B> {
+		return this.insertTreesAt(path, leaves.map(leaf => ({value: leaf})), comparator)
 	}
 
 	/** Create new branch node at given path. Will create a new forest. */
@@ -234,7 +268,7 @@ export class Forest<T, B> {
 		return this.insertTreeAt(path, {value: branch, children}, comparator)
 	}
 
-	private insertAtInternal(trees: readonly Tree<T, B>[], path: ForestPath, newTree: Tree<T, B>, comparator?: Comparator<T, B>): Tree<T, B>[] {
+	private insertAtInternal(trees: readonly Tree<T, B>[], path: ForestPath, newTrees: readonly Tree<T, B>[], comparator?: Comparator<T, B>): Tree<T, B>[] {
 		if(path.length === 0){
 			throw errorZeroLengthPath()
 		}
@@ -242,7 +276,7 @@ export class Forest<T, B> {
 		let result: Tree<T, B>[]
 		const lastPathPart = path[path.length - 1]!
 		if(path.length === 1){
-			result = insertElement(trees, newTree, lastPathPart)
+			result = insertElements(trees, newTrees, lastPathPart)
 			if(comparator){
 				result.sort(comparator)
 			}
@@ -251,7 +285,7 @@ export class Forest<T, B> {
 				if(!isTreeBranch(tree)){
 					throw errorNotBranch()
 				}
-				const children = insertElement(tree.children, newTree, lastPathPart)
+				const children = insertElements(tree.children, newTrees, lastPathPart)
 				if(comparator){
 					children.sort(comparator)
 				}
@@ -265,12 +299,18 @@ export class Forest<T, B> {
 	/** Move a tree node from one place in the forest to another. Will create a new forest.
 	Insert-shifting rules apply, see insertTreeAt() */
 	move(from: ForestPath, to: ForestPath, comparator?: Comparator<T, B>): Forest<T, B> {
-		const tree = this.getTreeAt(from)
-		to = updateMovePath(from, to)
+		return this.moveSeveral(from, to, 1, comparator)
+	}
+
+	/** Move several tree nodes from one place in the forest to another. Will create a new forest.
+	Insert-shifting rules apply, see insertTreeAt() */
+	moveSeveral(from: ForestPath, to: ForestPath, amount: number, comparator?: Comparator<T, B>): Forest<T, B> {
+		const movedTrees = this.getTreesAt(from, amount)
+		to = updateMovePath(from, to, amount)
 
 		let trees = this.trees
-		trees = this.deleteAtInternal(trees, from)
-		trees = this.insertAtInternal(trees, to, tree, comparator)
+		trees = this.deleteAtInternal(trees, from, amount)
+		trees = this.insertAtInternal(trees, to, movedTrees, comparator)
 		return new Forest(trees)
 	}
 
@@ -293,7 +333,7 @@ export class Forest<T, B> {
 		}
 
 		const childIndex = path[path.length - 1]!
-		return dropElement(parentChildren, childIndex)
+		return dropElements(parentChildren, childIndex, 1)
 	}
 
 	/** Get values of sibling nodes of node at given path. This excludes target node value. */
@@ -521,15 +561,15 @@ const errorNotBranchAt = (pathPart: number, index: number) =>
 
 const errorZeroLengthPath = () => new Error("Zero length forest paths are not allowed.")
 
-const dropElement = <T>(arr: readonly T[], index: number): T[] => [...arr.slice(0, index), ...arr.slice(index + 1)]
-const insertElement = <T>(arr: readonly T[], value: T, index: number): T[] =>
-	[...arr.slice(0, index), value, ...arr.slice(index)]
+const dropElements = <T>(arr: readonly T[], index: number, amount: number): T[] => [...arr.slice(0, index), ...arr.slice(index + amount)]
+const insertElements = <T>(arr: readonly T[], newElements: readonly T[], index: number): T[] =>
+	[...arr.slice(0, index), ...newElements, ...arr.slice(index)]
 
-const updateMovePath = (from: ForestPath, to: ForestPath): ForestPath => {
+const updateMovePath = (from: ForestPath, to: ForestPath, amount: number): ForestPath => {
 	const result = [...to]
 	for(let i = 0; i < Math.min(from.length, to.length); i++){
 		if(from[i]! < to[i]!){
-			result[i]!--
+			result[i]! -= amount
 			break
 		}
 	}
