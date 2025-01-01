@@ -4,7 +4,7 @@ const {
 	npm, clear, typecheck, build, copyToTarget, cutPackageJson, runTests, generateDts
 } = buildUtils({
 	defaultBuildOptions: {
-		entryPoints: ["./src/forest.ts"],
+		entryPoints: ["./src/main.ts"],
 		bundle: true,
 		sourcemap: true,
 		platform: "neutral",
