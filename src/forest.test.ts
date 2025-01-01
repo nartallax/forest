@@ -403,4 +403,12 @@ describe("Forest", () => {
  └1`)
 	})
 
+	test("delete/insert of zero nodes preserve old tree", () => {
+		const f = new Forest(trees)
+		const inserted = f.insertTreesAt([0], [])
+		expect(f).to.equal(inserted)
+		const deleted = f.deleteSeveralAt([0], 0)
+		expect(f).to.equal(deleted)
+	})
+
 })

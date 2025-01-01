@@ -206,8 +206,11 @@ export class Forest<T, B> {
 		return new Forest(this.deleteAtInternal(this.trees, path, 1))
 	}
 
-	/** Delete several tree nodes starting at given path. Will create a new forest. */
+	/** Delete several tree nodes starting at given path. Will create a new forest, unless amount is zero. */
 	deleteSeveralAt(path: ForestPath, amount: number): Forest<T, B> {
+		if(amount === 0){
+			return this
+		}
 		return new Forest(this.deleteAtInternal(this.trees, path, amount))
 	}
 
@@ -231,9 +234,12 @@ export class Forest<T, B> {
 		return trees
 	}
 
-	/** Insert several tree nodes at given path. Will create a new forest.
+	/** Insert several tree nodes at given path. Will create a new forest, unless there's no new trees.
 	See @method insertTreesAt for further explainations */
 	insertTreesAt(path: ForestPath, newTrees: readonly Tree<T, B>[], comparator?: Comparator<T, B>): Forest<T, B> {
+		if(newTrees.length === 0){
+			return this
+		}
 		return new Forest(this.insertAtInternal(this.trees, path, newTrees, comparator))
 	}
 
