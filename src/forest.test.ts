@@ -411,4 +411,25 @@ describe("Forest", () => {
 		expect(f).to.equal(deleted)
 	})
 
+	test("one more move test", () => {
+		let f = new Forest([
+			{
+				value: "dirA", children: [
+					{value: "leafA"},
+					{value: "leafB"}
+				]
+			},
+			{value: "leafC"},
+			{value: "leafD"}
+		])
+
+		f = f.moveSeveral([0, 0], [3], 1)
+		expect("\n" + f).to.eql(`
+├dirA
+│└leafB
+├leafC
+├leafD
+└leafA`)
+	})
+
 })

@@ -30,7 +30,7 @@ const main = async mode => {
 
 		case "test": {
 			await clear()
-			await runTests()
+			await runTests({nameFilter: process.argv[3]})
 		} break
 		
 		case "publish": {

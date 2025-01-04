@@ -573,7 +573,11 @@ const insertElements = <T>(arr: readonly T[], newElements: readonly T[], index: 
 
 const updateMovePath = (from: ForestPath, to: ForestPath, amount: number): ForestPath => {
 	const result = [...to]
-	for(let i = 0; i < Math.min(from.length, to.length); i++){
+	if(from.length > to.length){
+		// in this case, from location cannot influence to location
+		return result
+	}
+	for(let i = 0; i < from.length; i++){
 		if(from[i]! < to[i]!){
 			result[i]! -= amount
 			break
