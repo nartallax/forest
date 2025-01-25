@@ -432,4 +432,14 @@ describe("Forest", () => {
 └leafA`)
 	})
 
+	test("hasAtLeastThisMuchLeaves", () => {
+		const f = new Forest(trees)
+		expect(f.hasAtLeastThisMuchLeaves(1)).to.eql(true)
+		expect(f.hasAtLeastThisMuchLeaves(2)).to.eql(true)
+		expect(f.hasAtLeastThisMuchLeaves(3)).to.eql(true)
+		expect(f.hasAtLeastThisMuchLeaves(4)).to.eql(false)
+		expect(f.hasAtLeastThisMuchLeaves(5)).to.eql(false)
+		expect(f.hasAtLeastThisMuchLeaves(6)).to.eql(false)
+	})
+
 })

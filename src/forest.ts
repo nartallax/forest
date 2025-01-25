@@ -551,6 +551,18 @@ export class Forest<T, B> {
 		return result
 	}
 
+	hasAtLeastThisMuchLeaves(leavesCount: number): boolean {
+		let result = 0
+		for(const leaf of this.getLeaves()){
+			void leaf
+			result++
+			if(result >= leavesCount){
+				return true
+			}
+		}
+		return false
+	}
+
 }
 
 const errorNotLeaf = () =>
